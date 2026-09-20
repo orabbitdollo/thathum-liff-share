@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>LIFF Test | โรงพยาบาลท่าตูม</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f2f8f5;
+      padding: 24px;
+      color: #17372d;
+    }
+
+    .card {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 24px;
+      border-radius: 18px;
+    }
+
+    h2 {
+      color: #087f5b;
+    }
+
+    #status {
+      margin-top: 20px;
+      padding: 15px;
+      background: #eef8f4;
+      border-radius: 12px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+
+  <h2>🧪 LIFF Test</h2>
+
+  <p>
+    ระบบสอบสวนโรค โรงพยาบาลท่าตูม
+  </p>
+
+  <div id="status">
+    กำลังทดสอบ LIFF...
+  </div>
+
+</div>
+
+<script>
+
+const LIFF_ID = '2011675892-0Bfvc8vq';
+
+async function testLiff() {
+
+  const status =
+    document.getElementById('status');
+
+  try {
+
+    status.textContent =
+      'กำลังเรียก liff.init()...';
+
+    await liff.init({
+      liffId: LIFF_ID
+    });
+
+    status.textContent =
+      '✅ LIFF INIT SUCCESS\n\n' +
+      'isInClient: ' + liff.isInClient() + '\n' +
+      'isLoggedIn: ' + liff.isLoggedIn() + '\n\n' +
+      'URL:\n' + window.location.href;
+
+  } catch (error) {
+
+    status.textContent =
+      '❌ LIFF INIT FAILED\n\n' +
+      (error.message || String(error));
+
+  }
+
+}
+
+testLiff();
+
+</script>
+
+</body>
+</html>
