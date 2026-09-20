@@ -8,7 +8,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>ทดสอบ Flex Share</title>
+  <title>ทดสอบ LIFF Mobile</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
@@ -29,8 +29,8 @@
       width: 100%;
       max-width: 500px;
       margin: 0 auto;
-      padding: 24px;
       background: white;
+      padding: 24px;
       border-radius: 20px;
     }
 
@@ -40,53 +40,67 @@
     }
 
     #status {
-      margin: 20px 0;
+      margin: 18px 0;
       padding: 16px;
       background: #eef8f4;
       border-radius: 14px;
-      line-height: 1.6;
+      line-height: 1.7;
       white-space: pre-wrap;
+      word-break: break-word;
     }
 
     button {
       width: 100%;
-      padding: 16px;
       border: 0;
       border-radius: 14px;
+      padding: 16px;
+      font-size: 17px;
+      font-weight: 700;
       background: #06c755;
       color: white;
-      font-size: 17px;
-      font-weight: bold;
+      margin-top: 10px;
     }
 
     button:disabled {
-      opacity: 0.5;
+      opacity: 0.45;
+    }
+
+    .small {
+      margin-top: 18px;
+      font-size: 13px;
+      color: #70847b;
+      text-align: center;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="card">
+<div class="card">
 
-    <h2>🧪 ทดสอบ Flex Message</h2>
+  <h2>📱 ทดสอบแชร์บนมือถือ</h2>
 
-    <p>
-      ทดสอบ Share Target Picker
-    </p>
-
-    <div id="status">
-      กำลังเชื่อมต่อ LINE...
-    </div>
-
-    <button
-      id="shareButton"
-      disabled
-    >
-      📤 ทดสอบแชร์ Flex
-    </button>
-
+  <div>
+    ระบบสอบสวนโรค โรงพยาบาลท่าตูม
   </div>
+
+  <div id="status">
+    กำลังตรวจสอบ LINE...
+  </div>
+
+  <button
+    id="shareButton"
+    type="button"
+    disabled
+  >
+    📤 ทดสอบแชร์ Flex
+  </button>
+
+  <div class="small">
+    หน้านี้ใช้ตรวจสอบ LIFF บนมือถือ
+  </div>
+
+</div>
 
 
 <script>
@@ -113,12 +127,10 @@ function setStatus(text) {
 }
 
 
-/*
- * Flex แบบง่ายที่สุด
- * ไม่มีข้อมูลผู้ป่วย
- * ไม่มี URL รายงาน
- * ไม่มีปุ่มแชร์ซ้อน
- */
+/* ==========================================
+   FLEX ทดสอบ
+========================================== */
+
 const testFlex = {
 
   type: 'flex',
@@ -154,7 +166,7 @@ const testFlex = {
 
         {
           type: 'text',
-          text: 'Flex Message ทดสอบ',
+          text: 'ทดสอบจากโทรศัพท์มือถือ',
           margin: 'md',
           size: 'sm',
           color: '#666666'
@@ -169,12 +181,16 @@ const testFlex = {
 };
 
 
+/* ==========================================
+   INITIALIZE
+========================================== */
+
 async function initialize() {
 
   try {
 
     setStatus(
-      'กำลังเชื่อมต่อ LINE...'
+      'กำลังเริ่ม LIFF...'
     );
 
 
@@ -183,6 +199,9 @@ async function initialize() {
     });
 
 
+    /*
+     * ถ้ายังไม่ได้ Login
+     */
     if (!liff.isLoggedIn()) {
 
       setStatus(
@@ -196,26 +215,76 @@ async function initialize() {
     }
 
 
-    if (
-      !liff.isApiAvailable(
-        'shareTargetPicker'
-      )
-    ) {
+    /*
+     * ตรวจ Environment
+     */
 
-      throw new Error(
-        'อุปกรณ์นี้ไม่รองรับ Share Target Picker'
+    const inClient =
+      liff.isInClient();
+
+    const loggedIn =
+      liff.isLoggedIn();
+
+    const shareAvailable =
+      liff.isApiAvailable(
+        'shareTargetPicker'
       );
 
+    const os =
+      liff.getOS();
+
+    const version =
+      liff.getVersion();
+
+
+    /*
+     * แสดงผลบนหน้าจอ
+     */
+
+    let info = '';
+
+    info +=
+      'LIFF พร้อมใช้งาน ✅\n\n';
+
+    info +=
+      'isInClient: ' +
+      inClient +
+      '\n';
+
+    info +=
+      'isLoggedIn: ' +
+      loggedIn +
+      '\n';
+
+    info +=
+      'Share Target Picker: ' +
+      shareAvailable +
+      '\n';
+
+    info +=
+      'OS: ' +
+      os +
+      '\n';
+
+    info +=
+      'LIFF SDK: ' +
+      version;
+
+
+    setStatus(info);
+
+
+    /*
+     * เปิดปุ่มเฉพาะเมื่อ
+     * Share Target Picker ใช้ได้
+     */
+
+    if (shareAvailable) {
+
+      shareButton.disabled =
+        false;
+
     }
-
-
-    setStatus(
-      '✅ พร้อมทดสอบ Flex Message'
-    );
-
-
-    shareButton.disabled =
-      false;
 
 
   } catch (error) {
@@ -223,10 +292,12 @@ async function initialize() {
     console.error(error);
 
     setStatus(
-      '❌ ' +
+      '❌ LIFF ERROR\n\n' +
       (
-        error.message ||
-        String(error)
+        error &&
+        error.message
+          ? error.message
+          : String(error)
       )
     );
 
@@ -235,33 +306,44 @@ async function initialize() {
 }
 
 
-async function shareTestFlex() {
+/* ==========================================
+   SHARE TEST
+========================================== */
+
+async function shareFlex() {
 
   shareButton.disabled =
     true;
 
+
   setStatus(
-    'กำลังเปิดรายชื่อเพื่อน / กลุ่ม...'
+    'กำลังเรียก Share Target Picker...'
   );
 
 
   try {
 
+    /*
+     * สำคัญ:
+     * เรียกโดยตรงจากการกดปุ่ม
+     */
+
     const result =
       await liff.shareTargetPicker(
         [
           testFlex
-        ],
-        {
-          isMultiple: true
-        }
+        ]
       );
 
+
+    /*
+     * กลับมาจาก Target Picker
+     */
 
     if (result) {
 
       setStatus(
-        '✅ ส่ง Flex Message สำเร็จ'
+        '✅ แชร์ Flex สำเร็จ'
       );
 
     } else {
@@ -277,12 +359,28 @@ async function shareTestFlex() {
 
     console.error(error);
 
+
+    let message =
+      error &&
+      error.message
+        ? error.message
+        : String(error);
+
+
+    let code =
+      error &&
+      error.code
+        ? error.code
+        : 'ไม่มี';
+
+
     setStatus(
-      '❌ แชร์ Flex ไม่สำเร็จ\n\n' +
-      (
-        error.message ||
-        String(error)
-      )
+      '❌ Share Target Picker ERROR\n\n' +
+      'Code: ' +
+      code +
+      '\n' +
+      'Message: ' +
+      message
     );
 
   } finally {
@@ -297,9 +395,13 @@ async function shareTestFlex() {
 
 shareButton.addEventListener(
   'click',
-  shareTestFlex
+  shareFlex
 );
 
+
+/* ==========================================
+   START
+========================================== */
 
 initialize();
 
