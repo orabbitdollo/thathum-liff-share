@@ -2,9 +2,10 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
-  <title>LIFF Test | โรงพยาบาลท่าตูม</title>
+  <title>ทดสอบแชร์เคส | โรงพยาบาลท่าตูม</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
@@ -29,11 +30,27 @@
     }
 
     #status {
-      margin-top: 20px;
+      margin: 20px 0;
       padding: 15px;
       background: #eef8f4;
       border-radius: 12px;
       white-space: pre-wrap;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 15px;
+      font-size: 17px;
+      font-weight: 700;
+      background: #06c755;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
     }
   </style>
 </head>
@@ -42,15 +59,21 @@
 
 <div class="card">
 
-  <h2>🧪 LIFF Test</h2>
+  <h2>📤 ทดสอบแชร์เคส</h2>
 
   <p>
     ระบบสอบสวนโรค โรงพยาบาลท่าตูม
   </p>
 
   <div id="status">
-    กำลังทดสอบ LIFF...
+    กำลังเชื่อมต่อ LINE...
   </div>
+
+  <button id="shareButton"
+          onclick="testShare()"
+          disabled>
+    📤 เปิดรายชื่อเพื่อน / กลุ่ม
+  </button>
 
 </div>
 
@@ -58,37 +81,113 @@
 
 const LIFF_ID = '2011675892-0Bfvc8vq';
 
-async function testLiff() {
+const statusBox =
+  document.getElementById('status');
 
-  const status =
-    document.getElementById('status');
+const shareButton =
+  document.getElementById('shareButton');
+
+
+async function initializeLiff() {
 
   try {
 
-    status.textContent =
-      'กำลังเรียก liff.init()...';
+    statusBox.textContent =
+      'กำลังเชื่อมต่อ LINE...';
 
     await liff.init({
       liffId: LIFF_ID
     });
 
-    status.textContent =
-      '✅ LIFF INIT SUCCESS\n\n' +
-      'isInClient: ' + liff.isInClient() + '\n' +
-      'isLoggedIn: ' + liff.isLoggedIn() + '\n\n' +
-      'URL:\n' + window.location.href;
+    if (!liff.isLoggedIn()) {
+
+      statusBox.textContent =
+        'กำลังเข้าสู่ระบบ LINE...';
+
+      liff.login();
+      return;
+    }
+
+    const available =
+      liff.isApiAvailable(
+        'shareTargetPicker'
+      );
+
+    if (!available) {
+
+      statusBox.textContent =
+        '❌ อุปกรณ์นี้ไม่รองรับ Share Target Picker';
+
+      return;
+    }
+
+    statusBox.textContent =
+      '✅ พร้อมทดสอบ Share Target Picker';
+
+    shareButton.disabled = false;
 
   } catch (error) {
 
-    status.textContent =
-      '❌ LIFF INIT FAILED\n\n' +
+    console.error(error);
+
+    statusBox.textContent =
+      '❌ เชื่อมต่อ LINE ไม่สำเร็จ\n\n' +
       (error.message || String(error));
 
   }
 
 }
 
-testLiff();
+
+async function testShare() {
+
+  shareButton.disabled = true;
+
+  statusBox.textContent =
+    'กำลังเปิดรายชื่อเพื่อน / กลุ่ม...';
+
+  try {
+
+    const result =
+      await liff.shareTargetPicker([
+        {
+          type: 'text',
+          text:
+            '🧪 ทดสอบระบบแชร์เคสสอบสวนโรค\n' +
+            'โรงพยาบาลท่าตูม'
+        }
+      ]);
+
+    if (result) {
+
+      statusBox.textContent =
+        '✅ ส่งข้อความทดสอบสำเร็จ';
+
+    } else {
+
+      statusBox.textContent =
+        'ℹ️ ยกเลิกการแชร์';
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+
+    statusBox.textContent =
+      '❌ ไม่สามารถเปิด Share Target Picker ได้\n\n' +
+      (error.message || String(error));
+
+  } finally {
+
+    shareButton.disabled = false;
+
+  }
+
+}
+
+
+initializeLiff();
 
 </script>
 
