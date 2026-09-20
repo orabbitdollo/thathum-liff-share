@@ -81,572 +81,751 @@
 
 <body>
 
-  <div class="card">
+<div class="card">
 
-    <h2>📤 แชร์เคสสอบสวนโรค</h2>
+  <h2>📤 แชร์เคสสอบสวนโรค</h2>
 
-    <div class="sub">
-      ระบบสอบสวนโรค โรงพยาบาลท่าตูม
-    </div>
-
-    <div id="status">
-      กำลังเชื่อมต่อ LINE...
-    </div>
-
-    <button
-      id="shareButton"
-      type="button"
-      disabled
-    >
-      📤 แชร์เคส
-    </button>
-
-    <div class="small">
-      เลือกเพื่อนหรือกลุ่ม LINE ที่ต้องการส่งต่อ
-    </div>
-
+  <div class="sub">
+    ระบบสอบสวนโรค โรงพยาบาลท่าตูม
   </div>
 
+  <div id="status">
+    กำลังเชื่อมต่อ LINE...
+  </div>
 
-  <script>
+  <button
+    id="shareButton"
+    type="button"
+    disabled
+  >
+    📤 แชร์เคส
+  </button>
 
-    /**
-     * =============================================
-     * CONFIG
-     * =============================================
-     */
+  <div class="small">
+    เลือกเพื่อนหรือกลุ่ม LINE ที่ต้องการส่งต่อ
+  </div>
 
-    const LIFF_ID =
-      '2011675892-0Bfvc8vq';
-
-
-    const API_URL =
-      'https://script.google.com/macros/s/AKfycbxmKEqLCVqj7BHSwSOpunVlKf6o-B9pWTctYsNhwv2-ds8_XDSCRy2FwHxzbcrIyYph/exec';
-
-
-    /**
-     * =============================================
-     * ELEMENTS
-     * =============================================
-     */
-
-    const statusBox =
-      document.getElementById('status');
-
-    const shareButton =
-      document.getElementById('shareButton');
+</div>
 
 
-    let caseToken = '';
+<script>
 
-    let flexMessage = null;
+/* ======================================================
+   CONFIG
+====================================================== */
 
+const LIFF_ID =
+  '2011675892-0Bfvc8vq';
 
-    /**
-     * =============================================
-     * แสดงสถานะ
-     * =============================================
-     */
-
-    function setStatus(message) {
-
-      statusBox.textContent =
-        message;
-
-    }
+const API_URL =
+  'https://script.google.com/macros/s/AKfycbxmKEqLCVqj7BHSwSOpunVlKf6o-B9pWTctYsNhwv2-ds8_XDSCRy2FwHxzbcrIyYph/exec';
 
 
-    /**
-     * =============================================
-     * อ่าน CASE TOKEN
-     *
-     * รองรับ:
-     * ?k=TOKEN
-     *
-     * และเก็บไว้ใน sessionStorage
-     * =============================================
-     */
+/* ======================================================
+   ELEMENTS
+====================================================== */
 
-    function getCaseToken() {
+const statusBox =
+  document.getElementById('status');
 
-      const params =
-        new URLSearchParams(
-          window.location.search
-        );
+const shareButton =
+  document.getElementById('shareButton');
+
+let caseToken = '';
+
+let flexMessage = null;
 
 
-      let token =
-        String(
-          params.get('k') || ''
-        ).trim();
+/* ======================================================
+   STATUS
+====================================================== */
+
+function setStatus(message) {
+
+  statusBox.textContent =
+    message;
+
+}
 
 
-      /**
-       * ถ้า URL มี token
-       * ให้จำไว้ก่อน
-       */
-      if (
-        /^[A-Fa-f0-9]{64}$/.test(token)
-      ) {
+/* ======================================================
+   TOKEN
+====================================================== */
 
-        try {
+function saveCaseToken(token) {
 
-          sessionStorage.setItem(
-            'THATUM_CASE_TOKEN',
-            token
-          );
+  if (
+    !/^[A-Fa-f0-9]{64}$/.test(token)
+  ) {
+    return;
+  }
 
-        } catch (_) {}
+  try {
 
-        return token;
+    sessionStorage.setItem(
+      'THATUM_CASE_TOKEN',
+      token
+    );
 
-      }
+  } catch (_) {}
+
+}
 
 
-      /**
-       * ถ้า URL ไม่มี token
-       * ลองอ่านจาก sessionStorage
-       */
+function getCaseToken() {
+
+  let token = '';
+
+  /*
+   * อ่าน ?k=TOKEN
+   */
+  try {
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    token =
+      String(
+        params.get('k') || ''
+      ).trim();
+
+  } catch (_) {}
+
+
+  /*
+   * ถ้าเจอ token ใน URL
+   */
+  if (
+    /^[A-Fa-f0-9]{64}$/.test(token)
+  ) {
+
+    saveCaseToken(token);
+
+    return token;
+
+  }
+
+
+  /*
+   * รองรับ liff.state
+   */
+  try {
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    let state =
+      String(
+        params.get('liff.state') || ''
+      ).trim();
+
+    if (state) {
+
       try {
+
+        state =
+          decodeURIComponent(state);
+
+      } catch (_) {}
+
+
+      const questionIndex =
+        state.indexOf('?');
+
+      if (questionIndex >= 0) {
+
+        const stateParams =
+          new URLSearchParams(
+            state.substring(
+              questionIndex + 1
+            )
+          );
 
         token =
           String(
-            sessionStorage.getItem(
-              'THATUM_CASE_TOKEN'
-            ) || ''
+            stateParams.get('k') || ''
           ).trim();
 
-      } catch (_) {
+        if (
+          /^[A-Fa-f0-9]{64}$/.test(token)
+        ) {
 
-        token = '';
+          saveCaseToken(token);
 
-      }
+          return token;
 
-
-      if (
-        /^[A-Fa-f0-9]{64}$/.test(token)
-      ) {
-
-        return token;
+        }
 
       }
-
-
-      return '';
 
     }
 
+  } catch (_) {}
 
-    /**
-     * =============================================
-     * เรียก Apps Script ด้วย JSONP
-     *
-     * ไม่ใช้ fetch
-     * เพื่อหลีกเลี่ยงปัญหา CORS
-     * =============================================
-     */
 
-    function loadFlexMessage(token) {
+  /*
+   * sessionStorage
+   */
+  try {
 
-      return new Promise(
-        function(resolve, reject) {
+    token =
+      String(
+        sessionStorage.getItem(
+          'THATUM_CASE_TOKEN'
+        ) || ''
+      ).trim();
 
-          const callbackName =
-            'thatumCallback_' +
-            Date.now() +
-            '_' +
-            Math.floor(
-              Math.random() * 100000
+  } catch (_) {
+
+    token = '';
+
+  }
+
+
+  if (
+    /^[A-Fa-f0-9]{64}$/.test(token)
+  ) {
+
+    return token;
+
+  }
+
+
+  return '';
+
+}
+
+
+/* ======================================================
+   JSONP
+====================================================== */
+
+function requestFlexOnce(
+  token,
+  attempt
+) {
+
+  return new Promise(
+    function(resolve, reject) {
+
+      const callbackName =
+        'thatumShare_' +
+        Date.now() +
+        '_' +
+        attempt +
+        '_' +
+        Math.floor(
+          Math.random() * 1000000
+        );
+
+
+      const script =
+        document.createElement(
+          'script'
+        );
+
+
+      let finished =
+        false;
+
+
+      /*
+       * ให้ Apps Script มีเวลามากขึ้น
+       */
+      const timer =
+        setTimeout(
+          function() {
+
+            cleanup();
+
+            reject(
+              new Error(
+                'TIMEOUT'
+              )
             );
 
-
-          let finished = false;
-
-
-          /**
-           * script element
-           */
-          const script =
-            document.createElement(
-              'script'
-            );
+          },
+          30000
+        );
 
 
-          /**
-           * timeout
-           */
-          const timer =
-            setTimeout(
-              function() {
+      function cleanup() {
 
-                cleanup();
+        if (finished) {
+          return;
+        }
 
-                reject(
-                  new Error(
-                    'หมดเวลารอข้อมูลจากระบบ'
-                  )
-                );
+        finished = true;
 
-              },
-              20000
-            );
+        clearTimeout(timer);
 
 
-          /**
-           * ล้าง callback และ script
-           */
-          function cleanup() {
+        try {
 
-            if (finished) {
-              return;
-            }
+          delete window[
+            callbackName
+          ];
 
-            finished = true;
+        } catch (_) {
 
-            clearTimeout(timer);
-
-            try {
-
-              delete window[
-                callbackName
-              ];
-
-            } catch (_) {
-
-              window[
-                callbackName
-              ] = undefined;
-
-            }
-
-            if (
-              script &&
-              script.parentNode
-            ) {
-
-              script.parentNode
-                .removeChild(script);
-
-            }
-
-          }
-
-
-          /**
-           * callback ที่ Apps Script
-           * จะเรียกกลับมา
-           */
           window[
             callbackName
-          ] =
-            function(result) {
-
-              if (finished) {
-                return;
-              }
-
-              cleanup();
-
-              resolve(result);
-
-            };
-
-
-          /**
-           * ถ้าโหลด API ไม่สำเร็จ
-           */
-          script.onerror =
-            function() {
-
-              if (finished) {
-                return;
-              }
-
-              cleanup();
-
-              reject(
-                new Error(
-                  'ไม่สามารถเชื่อมต่อระบบข้อมูลเคสได้'
-                )
-              );
-
-            };
-
-
-          /**
-           * สร้าง URL API
-           */
-          script.src =
-            API_URL +
-            '?action=sharePayload' +
-            '&k=' +
-            encodeURIComponent(token) +
-            '&callback=' +
-            encodeURIComponent(
-              callbackName
-            );
-
-
-          document.head
-            .appendChild(script);
-
-        }
-      );
-
-    }
-
-
-    /**
-     * =============================================
-     * เริ่มระบบ
-     * =============================================
-     */
-
-    async function initialize() {
-
-      try {
-
-        setStatus(
-          'กำลังเชื่อมต่อ LINE...'
-        );
-
-
-        /**
-         * LIFF INIT
-         */
-        await liff.init({
-          liffId: LIFF_ID
-        });
-
-
-        /**
-         * Login
-         */
-        if (!liff.isLoggedIn()) {
-
-          setStatus(
-            'กำลังเข้าสู่ระบบ LINE...'
-          );
-
-          liff.login();
-
-          return;
-
-        }
-
-
-        /**
-         * ตรวจ Share Target Picker
-         */
-        if (
-          !liff.isApiAvailable(
-            'shareTargetPicker'
-          )
-        ) {
-
-          throw new Error(
-            'อุปกรณ์นี้ไม่รองรับ Share Target Picker'
-          );
-
-        }
-
-
-        /**
-         * สำคัญ:
-         * อ่าน token หลัง liff.init()
-         */
-        caseToken =
-          getCaseToken();
-
-
-        if (!caseToken) {
-
-          throw new Error(
-            'ไม่พบรหัสเคสจากลิงก์แชร์'
-          );
-
-        }
-
-
-        setStatus(
-          'กำลังเตรียมข้อมูลเคส...'
-        );
-
-
-        /**
-         * ขอ Flex จาก Apps Script
-         */
-        const result =
-          await loadFlexMessage(
-            caseToken
-          );
-
-
-        if (
-          !result ||
-          result.ok !== true
-        ) {
-
-          throw new Error(
-            result &&
-            result.error
-              ? result.error
-              : 'ไม่สามารถเตรียมข้อมูลเคสได้'
-          );
+          ] = undefined;
 
         }
 
 
         if (
-          !result.message ||
-          result.message.type !== 'flex'
+          script.parentNode
         ) {
 
-          throw new Error(
-            'ข้อมูล Flex Message ไม่ถูกต้อง'
-          );
+          script.parentNode
+            .removeChild(script);
 
         }
-
-
-        flexMessage =
-          result.message;
-
-
-        /**
-         * พร้อมแชร์
-         */
-        setStatus(
-          '✅ พร้อมแชร์เคส'
-        );
-
-        shareButton.disabled =
-          false;
-
-
-      } catch (error) {
-
-        console.error(error);
-
-        setStatus(
-          '❌ ' +
-          (
-            error &&
-            error.message
-              ? error.message
-              : String(error)
-          )
-        );
-
-        shareButton.disabled =
-          true;
-
-      }
-
-    }
-
-
-    /**
-     * =============================================
-     * SHARE
-     * =============================================
-     */
-
-    async function shareCase() {
-
-      if (!flexMessage) {
-
-        setStatus(
-          '❌ ยังไม่มีข้อมูลเคสสำหรับแชร์'
-        );
-
-        return;
 
       }
 
 
-      shareButton.disabled =
-        true;
+      /*
+       * Apps Script callback
+       */
+      window[
+        callbackName
+      ] =
+        function(result) {
 
+          if (finished) {
+            return;
+          }
+
+          cleanup();
+
+          resolve(result);
+
+        };
+
+
+      /*
+       * โหลดไม่ได้
+       */
+      script.onerror =
+        function() {
+
+          if (finished) {
+            return;
+          }
+
+          cleanup();
+
+          reject(
+            new Error(
+              'NETWORK'
+            )
+          );
+
+        };
+
+
+      /*
+       * Cache buster สำคัญ
+       *
+       * ทุกครั้งจะเป็น URL ใหม่
+       */
+      const cacheBuster =
+        Date.now() +
+        '_' +
+        Math.floor(
+          Math.random() * 1000000
+        );
+
+
+      script.src =
+        API_URL +
+        '?action=sharePayload' +
+        '&k=' +
+        encodeURIComponent(token) +
+        '&callback=' +
+        encodeURIComponent(
+          callbackName
+        ) +
+        '&_=' +
+        encodeURIComponent(
+          cacheBuster
+        );
+
+
+      document.head
+        .appendChild(script);
+
+    }
+  );
+
+}
+
+
+/* ======================================================
+   โหลด FLEX
+   retry อัตโนมัติ
+====================================================== */
+
+async function loadFlexMessage(
+  token
+) {
+
+  let lastError = null;
+
+
+  /*
+   * ลองสูงสุด 3 ครั้ง
+   */
+  for (
+    let attempt = 1;
+    attempt <= 3;
+    attempt++
+  ) {
+
+    try {
 
       setStatus(
-        'กำลังเปิดรายชื่อเพื่อน / กลุ่ม...'
+        'กำลังเตรียมข้อมูลเคส...\n' +
+        'ครั้งที่ ' +
+        attempt +
+        '/3'
       );
 
 
-      try {
-
-        const result =
-          await liff.shareTargetPicker(
-            [
-              flexMessage
-            ],
-            {
-              isMultiple: true
-            }
-          );
-
-
-        /**
-         * ผู้ใช้ส่งสำเร็จ
-         */
-        if (result) {
-
-          setStatus(
-            '✅ แชร์เคสสำเร็จ'
-          );
-
-        } else {
-
-          /**
-           * ผู้ใช้กด X / ยกเลิก
-           */
-          setStatus(
-            'ℹ️ ยกเลิกการแชร์'
-          );
-
-        }
-
-
-      } catch (error) {
-
-        console.error(error);
-
-        setStatus(
-          '❌ ไม่สามารถแชร์เคสได้\n\n' +
-          (
-            error &&
-            error.message
-              ? error.message
-              : String(error)
-          )
+      const result =
+        await requestFlexOnce(
+          token,
+          attempt
         );
 
-      } finally {
 
-        shareButton.disabled =
-          false;
+      return result;
+
+
+    } catch (error) {
+
+      lastError =
+        error;
+
+
+      /*
+       * ถ้ายังไม่ใช่ครั้งสุดท้าย
+       * รอเล็กน้อยแล้วลองใหม่
+       */
+      if (attempt < 3) {
+
+        await new Promise(
+          function(resolve) {
+
+            setTimeout(
+              resolve,
+              1200
+            );
+
+          }
+        );
 
       }
 
     }
 
+  }
 
-    /**
-     * ปุ่มแชร์
-     */
-    shareButton.addEventListener(
-      'click',
-      shareCase
+
+  throw new Error(
+    lastError &&
+    lastError.message === 'NETWORK'
+      ? 'ไม่สามารถเชื่อมต่อระบบข้อมูลเคสได้'
+      : 'หมดเวลารอข้อมูลจากระบบ'
+  );
+
+}
+
+
+/* ======================================================
+   INITIALIZE
+====================================================== */
+
+async function initialize() {
+
+  try {
+
+    setStatus(
+      'กำลังเชื่อมต่อ LINE...'
     );
 
 
-    /**
-     * เริ่มระบบ
+    /*
+     * LIFF INIT
      */
-    initialize();
+    await liff.init({
+      liffId: LIFF_ID
+    });
 
-  </script>
+
+    /*
+     * อ่าน Token ทันทีหลัง LIFF init
+     */
+    caseToken =
+      getCaseToken();
+
+
+    /*
+     * LOGIN
+     */
+    if (!liff.isLoggedIn()) {
+
+      /*
+       * จำ token ก่อน redirect
+       */
+      if (caseToken) {
+
+        saveCaseToken(
+          caseToken
+        );
+
+      }
+
+
+      setStatus(
+        'กำลังเข้าสู่ระบบ LINE...'
+      );
+
+
+      liff.login();
+
+      return;
+
+    }
+
+
+    /*
+     * ตรวจ Share Target Picker
+     */
+    if (
+      !liff.isApiAvailable(
+        'shareTargetPicker'
+      )
+    ) {
+
+      throw new Error(
+        'อุปกรณ์นี้ไม่รองรับ Share Target Picker'
+      );
+
+    }
+
+
+    /*
+     * ถ้ายังไม่มี token
+     * อ่านอีกครั้งหลัง login
+     */
+    if (!caseToken) {
+
+      caseToken =
+        getCaseToken();
+
+    }
+
+
+    if (!caseToken) {
+
+      throw new Error(
+        'ไม่พบรหัสเคสจากลิงก์แชร์'
+      );
+
+    }
+
+
+    /*
+     * โหลด Flex
+     */
+    const result =
+      await loadFlexMessage(
+        caseToken
+      );
+
+
+    if (
+      !result ||
+      result.ok !== true
+    ) {
+
+      throw new Error(
+        result &&
+        result.error
+          ? result.error
+          : 'ไม่สามารถเตรียมข้อมูลเคสได้'
+      );
+
+    }
+
+
+    if (
+      !result.message ||
+      result.message.type !== 'flex'
+    ) {
+
+      throw new Error(
+        'ข้อมูล Flex Message ไม่ถูกต้อง'
+      );
+
+    }
+
+
+    flexMessage =
+      result.message;
+
+
+    /*
+     * พร้อมใช้งาน
+     */
+    setStatus(
+      '✅ พร้อมแชร์เคส'
+    );
+
+
+    shareButton.disabled =
+      false;
+
+
+  } catch (error) {
+
+    console.error(
+      error
+    );
+
+
+    setStatus(
+      '❌ ' +
+      (
+        error &&
+        error.message
+          ? error.message
+          : String(error)
+      )
+    );
+
+
+    shareButton.disabled =
+      true;
+
+  }
+
+}
+
+
+/* ======================================================
+   SHARE
+====================================================== */
+
+async function shareCase() {
+
+  if (!flexMessage) {
+
+    setStatus(
+      '❌ ยังไม่มีข้อมูลเคสสำหรับแชร์'
+    );
+
+    return;
+
+  }
+
+
+  shareButton.disabled =
+    true;
+
+
+  setStatus(
+    'กำลังเปิดรายชื่อเพื่อน / กลุ่ม...'
+  );
+
+
+  try {
+
+    const result =
+      await liff.shareTargetPicker(
+        [
+          flexMessage
+        ],
+        {
+          isMultiple: true
+        }
+      );
+
+
+    /*
+     * สำเร็จ
+     */
+    if (result) {
+
+      setStatus(
+        '✅ แชร์เคสสำเร็จ'
+      );
+
+    } else {
+
+      /*
+       * ผู้ใช้ยกเลิก
+       */
+      setStatus(
+        'ℹ️ ยกเลิกการแชร์'
+      );
+
+    }
+
+
+  } catch (error) {
+
+    console.error(
+      error
+    );
+
+
+    setStatus(
+      '❌ ไม่สามารถแชร์เคสได้\n\n' +
+      (
+        error &&
+        error.message
+          ? error.message
+          : String(error)
+      )
+    );
+
+
+  } finally {
+
+    shareButton.disabled =
+      false;
+
+  }
+
+}
+
+
+/* ======================================================
+   BUTTON
+====================================================== */
+
+shareButton.addEventListener(
+  'click',
+  shareCase
+);
+
+
+/* ======================================================
+   START
+====================================================== */
+
+initialize();
+
+</script>
 
 </body>
 </html>
